@@ -1,12 +1,11 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const url = "https://youtube.com/feed/history";
+const getCategoryFromVideo = require("get-youtube-video-category/lib");
 
 (async () => {
   const cookies = JSON.parse(fs.readFileSync("cookie.json", "utf8"));
-  const browser = await puppeteer.launch({
-    headless: false,
-  });
+  const browser = await puppeteer.launch({});
 
   const page = await browser.newPage();
 
@@ -28,12 +27,18 @@ const url = "https://youtube.com/feed/history";
     await scrollDown(page);
     await page.waitFor(delay);
     postCount = await getCount(page);
-  } while (postCount > preCount);
+  } while (count > 1);
   await page.waitFor(delay);
 
   const data = await getLinks(page);
-  fs.writeFileSync("data.json", JSON.stringify(data));
-
+  for (d of data) {
+    const category = await getCategoryFromVideo(d.href).catch(err => {
+      return ""
+    });
+    console.log(category)
+    d.category = category
+  }
+  fs.writeFileSync("categories.json", JSON.stringify(data));
   await browser.close();
 })();
 
